@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ultimate Animated To-Do</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --bg: linear-gradient(135deg,#f5f7fa,#c3cfe2);
+  --card: rgba(255,255,255,0.7);
+  --text:#222;
+  --primary:#6c63ff;
+  --danger:#ff4d6d;
+}
+
+body.dark{
+  --bg: linear-gradient(135deg,#1f1f1f,#121212);
+  --card: rgba(30,30,30,0.8);
+  --text:#fff;
+  --primary:#00adb5;
+}
+
+body.neon{
+  --bg: linear-gradient(135deg,#000,#0f0f0f);
+  --card: rgba(20,20,20,0.85);
+  --text:#fff;
+  --primary:#ff00ff;
+}
+
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:'Poppins',sans-serif;
+}
+
+body{
+  background:var(--bg);
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  min-height:100vh;
+  transition:0.4s;
+}
+
+.container{
+  width:95%;
+  max-width:450px;
+  padding:25px;
+  border-radius:25px;
+  backdrop-filter:blur(20px);
+  background:var(--card);
+  box-shadow:0 20px 50px rgba(0,0,0,0.3);
+  color:var(--text);
+  animation:fadeIn 0.6s ease;
+}
+
+@keyframes fadeIn{
+  from{opacity:0; transform:translateY(20px);}
+  to{opacity:1; transform:translateY(0);}
+}
+
+h1{
+  text-align:center;
+  margin-bottom:20px;
+}
+
+.input-group{
+  display:flex;
+  gap:10px;
+}
+
+input{
+  flex:1;
+  padding:12px;
+  border:none;
+  border-radius:12px;
+  outline:none;
+  background:#eee;
+}
+
+button{
+  padding:10px 15px;
+  border:none;
+  border-radius:12px;
+  cursor:pointer;
+  background:var(--primary);
+  color:#fff;
+  font-weight:500;
+  transition:0.3s;
+}
+
+button:hover{
+  transform:scale(1.05);
+  opacity:0.9;
+}
+
+ul{
+  list-style:none;
+  margin-top:20px;
+}
+
+li{
+  background:rgba(0,0,0,0.05);
+  margin-bottom:10px;
+  padding:12px;
+  border-radius:12px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  animation:slideIn 0.4s ease;
+  transition:0.3s;
+}
+
+@keyframes slideIn{
+  from{opacity:0; transform:translateX(-20px);}
+  to{opacity:1; transform:translateX(0);}
+}
+
+li.completed{
+  text-decoration:line-through;
+  opacity:0.6;
+}
+
+.delete{
+  background:var(--danger);
+}
+
+.progress-container{
+  margin-top:15px;
+}
+
+.progress-bar{
+  height:8px;
+  border-radius:20px;
+  background:#ddd;
+  overflow:hidden;
+}
+
+.progress{
+  height:100%;
+  width:0%;
+  background:var(--primary);
+  transition:0.4s;
+}
+
+.stats{
+  display:flex;
+  justify-content:space-between;
+  font-size:14px;
+  margin-top:5px;
+}
+
+.theme-toggle{
+  display:flex;
+  gap:5px;
+  margin-top:15px;
+}
+
+.theme-toggle button{
+  flex:1;
+}
+
+@media(max-width:480px){
+  .container{
+    padding:18px;
+  }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1>✨ My Smart To-Do</h1>
+
+  <div class="input-group">
+    <input type="text" id="taskInput" placeholder="Enter your task...">
+    <button onclick="addTask()">Add</button>
+  </div>
+
+  <ul id="taskList"></ul>
+
+  <div class="progress-container">
+    <div class="progress-bar">
+      <div class="progress" id="progress"></div>
+    </div>
+    <div class="stats">
+      <span id="taskCount">0 Tasks</span>
+      <span id="completedCount">0 Completed</span>
+    </div>
+  </div>
+
+  <div class="theme-toggle">
+    <button onclick="setTheme('light')">Light</button>
+    <button onclick="setTheme('dark')">Dark</button>
+    <button onclick="setTheme('neon')">Neon</button>
+  </div>
+</div>
+
+<script>
+const input=document.getElementById("taskInput");
+const list=document.getElementById("taskList");
+const progress=document.getElementById("progress");
+const taskCount=document.getElementById("taskCount");
+const completedCount=document.getElementById("completedCount");
+
+let tasks=JSON.parse(localStorage.getItem("tasks"))||[];
+let savedTheme=localStorage.getItem("theme")||"light";
+document.body.className=savedTheme==="light"?"":savedTheme;
+
+document.addEventListener("DOMContentLoaded",renderTasks);
+
+input.addEventListener("keypress",function(e){
+  if(e.key==="Enter") addTask();
+});
+
+function addTask(){
+  if(input.value.trim()==="") return;
+  tasks.push({text:input.value,completed:false});
+  input.value="";
+  saveTasks();
+  renderTasks();
+}
+
+function renderTasks(){
+  list.innerHTML="";
+  tasks.forEach((task,index)=>{
+    const li=document.createElement("li");
+    li.className=task.completed?"completed":"";
+    li.innerHTML=`
+      <span onclick="toggleComplete(${index})">${task.text}</span>
+      <button class="delete" onclick="deleteTask(${index})">X</button>
+    `;
+    list.appendChild(li);
+  });
+  updateStats();
+}
+
+function toggleComplete(index){
+  tasks[index].completed=!tasks[index].completed;
+  saveTasks();
+  renderTasks();
+}
+
+function deleteTask(index){
+  tasks.splice(index,1);
+  saveTasks();
+  renderTasks();
+}
+
+function updateStats(){
+  const total=tasks.length;
+  const completed=tasks.filter(t=>t.completed).length;
+  taskCount.textContent=total+" Tasks";
+  completedCount.textContent=completed+" Completed";
+  progress.style.width= total ? (completed/total)*100+"%" : "0%";
+}
+
+function saveTasks(){
+  localStorage.setItem("tasks",JSON.stringify(tasks));
+}
+
+function setTheme(theme){
+  document.body.className=theme==="light"?"":theme;
+  localStorage.setItem("theme",theme);
+}
+</script>
+
+</body>
+</html>
